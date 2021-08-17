@@ -1,0 +1,15 @@
+diff --git a/nvml/src/examples/libpmemobj/map/data_store.c b/nvml/src/examples/libpmemobj/map/data_store.c
+index 075bd88..4a63f54 100755
+--- a/nvml/src/examples/libpmemobj/map/data_store.c
++++ b/nvml/src/examples/libpmemobj/map/data_store.c
+@@ -214,8 +214,8 @@ int main(int argc, const char *argv[]) {
+ 			map_insert(mapc, D_RW(root)->map, rand(),
+ 					new_store_item().oid);
+ 			} TX_END
+-			if (strcmp("hashmap_atomic", type))
+-				PMTest_CHECKER_END;
++			// if (strcmp("hashmap_atomic", type))
++			// 	PMTest_CHECKER_END;
+ 			PMTest_END;
+ 			C_execVeri(p, metadataPtr);
+ 		}

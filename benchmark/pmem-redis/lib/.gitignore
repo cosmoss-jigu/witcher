@@ -1,0 +1,6 @@
+*.c
+*.h
+.make-prerequisites
+.make-settings
+redis-server
+redis.conf

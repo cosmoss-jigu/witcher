@@ -1,0 +1,2 @@
+/usr/bin/ar qc libpart.a  CMakeFiles/part.dir/Tree.cpp.o CMakeFiles/part.dir/pmdk.cpp.o
+/usr/bin/ranlib libpart.a

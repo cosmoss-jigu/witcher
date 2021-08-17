@@ -1,0 +1,14 @@
+build/
+*.o
+*.a
+*.so
+*.swp
+*.ll
+*.bc
+*.s
+*.trace
+*.slice
+*.exe
+*ycm_extra_conf.py*
+cscope.*
+autom4te.cache

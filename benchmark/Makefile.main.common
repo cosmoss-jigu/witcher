@@ -1,0 +1,112 @@
+########################### User defined variables ###########################
+NAME ?= main
+DEBUGFLAGS ?= -debug
+OBJ_FILES ?=
+COV_FILES ?=
+
+LINK_LIBS = -lpmem
+
+################# Dont' edit the following lines accidently ##################
+CC = $(LLVM9_BIN)/clang
+CXX = $(LLVM9_BIN)/clang++
+OPT = $(LLVM9_BIN)/opt
+LLC = $(LLVM9_BIN)/llc
+LLVM_LINK = $(LLVM9_BIN)/llvm-link
+CFLAGS += -g -O0 -c -emit-llvm
+GIRI_DIR = $(WITCHER_HOME)/giri
+GIRI_LIB_DIR = $(GIRI_DIR)/build-llvm9
+GIRI_BIN_DIR = $(GIRI_DIR)/build-llvm9
+EXT_TRACING_FUNC_FILE = $(GIRI_DIR)/ext.tracing.func.txt
+IR_FILES = $(WITCHER_HOME)/benchmark/pmdk-1.8-deps/*.bc
+
+.PHONY: all
+
+all: $(NAME).trace.exe $(NAME).exe
+
+$(NAME).trace.exe : $(NAME).trace.o
+	$(CXX) -fno-strict-aliasing $(GIRI_LIB_DIR)/Tracing.o $(NAME).trace.o -o $@ $(LINK_LIBS) -lpthread -ldl
+
+$(NAME).trace.o : $(NAME).trace.bc
+	$(LLC) -asm-verbose=false -O0 -filetype=obj $< -o $@
+
+# clang++: compile assembly to executable
+# -fno-strict-aliasing: Instructs the compiler to not apply the strictest
+#                       aliasing rules available.
+# -Ldir:                LIBRARY_PATH(dir)
+# -lxxx:                library(libxxx.a)
+#$(NAME).trace.exe : $(NAME).trace.s
+#	$(CXX) -fno-strict-aliasing $+ -o $@ -L$(GIRI_LIB_DIR) -lrtgiri $(LINK_LIBS)
+
+# The llc command compiles LLVM source inputs into assembly language for a
+# specified architecture.
+# -asm-verbose: Add comments to directives.
+# -O0:          Optimization level 0
+# -o:           output
+#$(NAME).trace.s : $(NAME).trace.bc
+#	$(LLC) -asm-verbose=false -O0 $< -o $@
+
+# Instrument .bc to .trace.bc which contains recording code
+# -load:        Load the specified plugin
+# -mergereturn: Unify function exit nodes
+# -bbnum:         Assign Unique Identifiers to Basic Blocks
+# -lsnum:         Assign Unique Identifiers to Loads and Stores
+# -trace-giri:    Instrument code to trace basic block execution
+# -trace-file:    Trace filename
+# -remove-bbnum:  Remove Unique Identifiers of Basic Blocks
+# -remove-lsnum:  Remove Unique Identifiers of Loads and Stores
+# -stats:         Enable statistics output from program (available with Asserts)
+# -debug:         LLVM_DEBUG() for debug build
+# -o:             output
+$(NAME).trace.bc : $(NAME).all.bc
+	$(OPT) -load $(GIRI_LIB_DIR)/libdgutility.so \
+		-load $(GIRI_LIB_DIR)/libgiri.so \
+		-mergereturn -bbnum -lsnum \
+		-trace-giri -trace-file=$(NAME).trace \
+		-ext-tracing-func-file=$(EXT_TRACING_FUNC_FILE)\
+		-remove-bbnum -remove-lsnum \
+		-stats $(DEBUGFLAGS) $< -o $@
+
+# %:  Pattern-specific Variable Values
+# $@: The filename representing the target.
+# $%: The filename element of an archive member specification.
+# $<: The filename of the first prerequisite.
+# $?: The names of all prerequisites that are newer than the target, separated
+#     by spaces.
+# $^: The filenames of all the prerequisites, separated by spaces.
+#     This list has duplicate filenames removed since for most uses, such as
+#     compiling, copying, etc., duplicates are not wanted.
+# $+: Similar to $^, this is the names of all the prerequisites separated by
+#     spaces, except that $+ includes duplicates. This variable was created for
+#     specific situations such as arguments to linkers where duplicate values
+#     have meaning.
+# $*: The stem of the target filename. A stem is typically a filename without
+#     its suffix. Its use outside of pattern rules is discouraged.
+
+MAIN_O=$(NAME).o
+MAIN_BC=$(NAME).bc
+ifeq ($(redis),yes)
+	MAIN_O=
+	MAIN_BC=
+endif
+
+# Merge all bc into one bc
+$(NAME).all.bc: $(MAIN_BC)
+	$(LLVM_LINK) $(IR_FILES) -o $@
+
+# Generate a pure executable
+$(NAME).exe : $(MAIN_O)
+	$(CXX) -g $(OBJ_FILES) $(LINK_LIBS) -lpmemobj -o $@
+
+# Generate an executable for coverage report
+$(NAME).cov.exe : $(NAME).cov.o
+	$(CXX) -g -fprofile-instr-generate -fcoverage-mapping $(COV_FILES) $(LINK_LIBS) -lpmemobj -o $@
+
+
+.PHONY: ptrace rebuild clean
+
+# Rebuild
+rebuild: clean all
+
+# Clean
+clean:
+	@ rm -rf *.ll *.bc *.o *.s *.exe

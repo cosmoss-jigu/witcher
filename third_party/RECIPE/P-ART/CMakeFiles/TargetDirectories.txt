@@ -1,0 +1,8 @@
+/home/okie90/witcher/third_party/P-ART/CMakeFiles/install/strip.dir
+/home/okie90/witcher/third_party/P-ART/CMakeFiles/install/local.dir
+/home/okie90/witcher/third_party/P-ART/CMakeFiles/example.dir
+/home/okie90/witcher/third_party/P-ART/CMakeFiles/part.dir
+/home/okie90/witcher/third_party/P-ART/CMakeFiles/edit_cache.dir
+/home/okie90/witcher/third_party/P-ART/CMakeFiles/rebuild_cache.dir
+/home/okie90/witcher/third_party/P-ART/CMakeFiles/list_install_components.dir
+/home/okie90/witcher/third_party/P-ART/CMakeFiles/install.dir

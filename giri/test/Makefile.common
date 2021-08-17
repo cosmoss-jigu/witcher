@@ -1,0 +1,106 @@
+##===- giri/test/UnitTests/Makefile.common -----------------*- Makefile -*-===##
+#
+
+########################### User defined variables ###########################
+NAME ?= main
+DEBUGFLAGS ?= -debug
+GIRI_DIR ?= ../../../build
+BuildMode ?= Release+Debug+Asserts
+SRC_FILES ?= $(wildcard *.c)
+IR_FILES ?= $(SRC_FILES:%.c=%.bc)
+INPUT ?=
+CRITERION ?=
+TEST_ANS ?= ans-inst.txt
+MAPPING ?=
+
+################# Dont' edit the following lines accidently ##################
+CC = clang
+CXX = clang++
+CFLAGS += -g -O0 -c -emit-llvm
+GIRI_LIB_DIR = $(GIRI_DIR)/$(BuildMode)/lib
+GIRI_BIN_DIR = $(GIRI_DIR)/$(BuildMode)/bin
+
+.PHONY: all lib
+
+all: lib $(NAME).slice.loc
+
+lib:
+	$(MAKE) -s -C $(GIRI_DIR)
+
+%.slice.loc: %.slice
+	@ sed -n '/^Source.*[0-9]\+$$/p' $< |\
+		awk -F: '{print $$3}' |\
+		sort -g |\
+		uniq > $@
+
+$(NAME).slice : $(NAME).all.bc $(NAME).trace
+	opt -load $(GIRI_LIB_DIR)/libdgutility.so \
+		-load $(GIRI_LIB_DIR)/libgiri.so \
+		-mergereturn -bbnum -lsnum \
+		-dgiri -trace-file=$(NAME).trace -slice-file=$(NAME).slice $(CRITERION)\
+		-remove-bbnum -remove-lsnum \
+		-stats $(DEBUGFLAGS) $< -o /dev/null
+
+$(NAME).trace: $(NAME).trace.exe
+	- ./$< $(INPUT)
+
+$(NAME).trace.exe : $(NAME).trace.s
+	$(CXX) -fno-strict-aliasing $+ -o $@ -L$(GIRI_LIB_DIR) -lrtgiri $(LDFLAGS)
+
+$(NAME).trace.s : $(NAME).trace.bc
+	llc -asm-verbose=false -O0 $< -o $@
+
+$(NAME).trace.bc : $(NAME).all.bc
+	opt -load $(GIRI_LIB_DIR)/libdgutility.so \
+		-load $(GIRI_LIB_DIR)/libgiri.so \
+		-mergereturn -bbnum -lsnum \
+		-trace-giri -trace-file=$(NAME).trace \
+		-remove-bbnum -remove-lsnum \
+		-stats $(DEBUGFLAGS) $< -o $@
+
+$(NAME).all.bc: $(IR_FILES)
+	llvm-link $^ -o $@
+$(IR_FILES) : %.bc : %.c
+	$(CC) $(CFLAGS) $+ -o $@
+
+.PHONY: mapping bbid bbid
+
+mapping: $(NAME).all.bc
+	opt -load $(GIRI_LIB_DIR)/libdgutility.so \
+		-load $(GIRI_LIB_DIR)/libgiri.so \
+		-mergereturn \
+		-srcline-mapping $(MAPPING) \
+		-stats $(DEBUGFLAGS) $< -o /dev/null
+
+bbid: $(NAME).all.bc
+	opt -load $(GIRI_LIB_DIR)/libdgutility.so \
+		-mergereturn \
+		-bbnum -dump-bbid=true \
+		-remove-bbnum \
+		-stats $(DEBUGFLAGS) $< -o /dev/null 2>&1 |\
+		view -
+
+lsid: $(NAME).all.bc
+	opt -load $(GIRI_LIB_DIR)/libdgutility.so \
+		-mergereturn \
+		-lsnum -dump-lsid=true \
+		-remove-lsnum \
+		-stats $(DEBUGFLAGS) $< -o /dev/null 2>&1 |\
+		view -
+
+%.ll : %.bc
+	llvm-dis $< -o $@
+
+.PHONY: test ptrace rebuild clean clean-all
+
+test: $(NAME).slice.loc
+	diff $< $(TEST_ANS)
+
+prtrace: $(NAME).trace
+	$(GIRI_BIN_DIR)/prtrace $< | view -
+
+rebuild: clean all
+
+clean: clean-all
+	@ rm -f *.ll *.bc *.o *.s *.slice *.slice.loc *.exe *.trace ans.txt
+clean-all:

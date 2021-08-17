@@ -1,0 +1,2 @@
+/usr/bin/ar qc libIndexes.a  CMakeFiles/Indexes.dir/src/bwtree.cpp.o CMakeFiles/Indexes.dir/src/pmdk.cpp.o
+/usr/bin/ranlib libIndexes.a

@@ -1,0 +1,287 @@
+########################### User defined variables ###########################
+NAME ?= main
+DEBUGFLAGS ?= -debug
+
+PM_FILE_PATH ?=
+PM_SIZE ?=
+PM_LAYOUT ?=
+OP_FILE_PATH ?=
+OP_INDEX ?=
+SKIP_INDEX ?=
+OUTPUT_PATH ?=
+MEM_LAYOUT_PATH ?=
+INPUT ?=
+CRASH_CANDIDATES ?=
+CRASH_TARGET ?=
+
+PM_ADDR ?=
+
+REPLAY_OUT_PATH ?=
+OP_PATH ?=
+
+TRACE_EXE ?=
+EXE ?=
+COV_EXE ?=
+ALL_BC ?=
+
+################# Dont' edit the following lines accidently ##################
+CC = $(LLVM9_BIN)/clang
+CXX = $(LLVM9_BIN)/clang++
+OPT = $(LLVM9_BIN)/opt
+LLVMPROFDATA = $(LLVM9_BIN)/llvm-profdata
+LLVMCOV = $(LLVM9_BIN)/llvm-cov
+GIRI_DIR = $(WITCHER_HOME)/giri
+GIRI_LIB_DIR = $(GIRI_DIR)/build-llvm9
+GIRI_BIN_DIR = $(GIRI_DIR)/build-llvm9
+EXT_TRACING_FUNC_FILE = $(GIRI_DIR)/ext.tracing.func.txt
+PPDG_PARALLEL_EXE_PATH = $(GIRI_DIR)/ppdg_parallel/ppdg.py
+REPLAY_DIR = $(WITCHER_HOME)/replay
+REPLAY_EXE_PATH = $(REPLAY_DIR)/witcher.py
+REPLAY_PARALLEL_PATH = $(REPLAY_DIR)
+SERVER_NAME ?= na
+CRASH ?= 10000000
+
+.PHONY: all
+
+all: res_analysis tc
+
+tc: $(NAME).pmtrace
+	$(REPLAY_EXE_PATH) \
+	-r WitcherTC \
+	-t $(NAME).pmtrace
+
+yat: $(NAME).pmtrace
+	$(REPLAY_EXE_PATH) \
+	-r Yat \
+	-t $(NAME).pmtrace
+
+pmreorder: $(NAME).pmtrace
+	$(REPLAY_EXE_PATH) \
+	-r PMReorder \
+	-t $(NAME).pmtrace
+
+replay-output-ct: $(NAME).pmtrace
+	$(REPLAY_EXE_PATH) \
+	-r Witcher \
+	-t $(NAME).pmtrace \
+	-p $(NAME).ppdg \
+	-v $(EXE) \
+	-pmfile $(PM_FILE_PATH) \
+	-pmaddr $(PM_ADDR) \
+	-pmsize $(PM_SIZE) \
+	-pmlayout $(PM_LAYOUT) \
+	-opfile $(OP_PATH) \
+	-oracle $(OUTPUT_PATH) \
+	-o $(REPLAY_OUT_PATH)-ct \
+	-ct $(CRASH_TARGET)
+
+replay-output-cc: $(NAME).pmtrace $(NAME).ppdg
+	$(REPLAY_EXE_PATH) \
+	-r Witcher \
+	-t $(NAME).pmtrace \
+	-p $(NAME).ppdg \
+	-v $(EXE) \
+	-pmfile $(PM_FILE_PATH) \
+	-pmaddr $(PM_ADDR) \
+	-pmsize $(PM_SIZE) \
+	-pmlayout $(PM_LAYOUT) \
+	-opfile $(OP_PATH) \
+	-oracle $(OUTPUT_PATH) \
+	-o $(REPLAY_OUT_PATH)-cc \
+	-cc $(CRASH_CANDIDATES)
+
+replay-output: $(NAME).pmtrace $(NAME).ppdg
+	$(REPLAY_EXE_PATH) \
+	-r Witcher \
+	-t $(NAME).pmtrace \
+	-p $(NAME).ppdg \
+	-v $(EXE) \
+	-pmfile $(PM_FILE_PATH) \
+	-pmaddr $(PM_ADDR) \
+	-pmsize $(PM_SIZE) \
+	-pmlayout $(PM_LAYOUT) \
+	-opfile $(OP_PATH) \
+	-oracle $(OUTPUT_PATH) \
+	-o $(REPLAY_OUT_PATH)
+
+res_analysis: replay-output-p $(NAME).trace.split.bb
+	$(REPLAY_PARALLEL_PATH)/witcher_parallel_res_analysis.py \
+	-input replay-output-p \
+	-opfile $(OP_PATH) \
+	-bb $(NAME).trace.split.bb
+
+full3: replay-output-p-full3 $(NAME).trace.split.bb
+	$(REPLAY_PARALLEL_PATH)/witcher_parallel_res_analysis.py \
+	-input replay-output-p-full3 \
+	-opfile $(OP_PATH) \
+	-bb $(NAME).trace.split.bb
+
+replay-output-p-full3: $(NAME).pmtrace
+	$(REPLAY_PARALLEL_PATH)/witcher_parallel_full3.py \
+	-t $(NAME).pmtrace \
+	-v $(EXE) \
+	-pmfile $(PM_FILE_PATH) \
+	-pmaddr $(PM_ADDR) \
+	-pmsize $(PM_SIZE) \
+	-pmlayout $(PM_LAYOUT) \
+	-opfile $(OP_PATH) \
+	-oracle $(OUTPUT_PATH) \
+	-o $(REPLAY_OUT_PATH)-p-full3 \
+	-w $(REPLAY_PARALLEL_PATH) \
+	-plan plan.txt
+
+full2: replay-output-p-full2 $(NAME).trace.split.bb
+	$(REPLAY_PARALLEL_PATH)/witcher_parallel_res_analysis.py \
+	-input replay-output-p-full2 \
+	-opfile $(OP_PATH) \
+	-bb $(NAME).trace.split.bb
+
+replay-output-p-full2: $(NAME).pmtrace
+	$(REPLAY_PARALLEL_PATH)/witcher_parallel_full2.py \
+	-t $(NAME).pmtrace \
+	-v $(EXE) \
+	-pmfile $(PM_FILE_PATH) \
+	-pmaddr $(PM_ADDR) \
+	-pmsize $(PM_SIZE) \
+	-pmlayout $(PM_LAYOUT) \
+	-opfile $(OP_PATH) \
+	-oracle $(OUTPUT_PATH) \
+	-o $(REPLAY_OUT_PATH)-p-full2 \
+	-w $(REPLAY_PARALLEL_PATH) \
+	-plan plan.txt
+
+full: replay-output-p-full $(NAME).trace.split.bb
+	$(REPLAY_PARALLEL_PATH)/witcher_parallel_res_analysis.py \
+	-input replay-output-p-full \
+	-opfile $(OP_PATH) \
+	-bb $(NAME).trace.split.bb
+
+replay-output-p-full: $(NAME).pmtrace
+	$(REPLAY_PARALLEL_PATH)/witcher_parallel_full.py \
+	-t $(NAME).pmtrace \
+	-v $(EXE) \
+	-pmfile $(PM_FILE_PATH) \
+	-pmaddr $(PM_ADDR) \
+	-pmsize $(PM_SIZE) \
+	-pmlayout $(PM_LAYOUT) \
+	-opfile $(OP_PATH) \
+	-oracle $(OUTPUT_PATH) \
+	-o $(REPLAY_OUT_PATH)-p-full \
+	-w $(REPLAY_PARALLEL_PATH) \
+	-plan plan.txt
+
+replay-output-p: $(NAME).pmtrace $(NAME).ppdg
+	$(REPLAY_PARALLEL_PATH)/witcher_parallel.py \
+	-t $(NAME).pmtrace \
+	-p $(NAME).ppdg \
+	-v $(EXE) \
+	-pmfile $(PM_FILE_PATH) \
+	-pmaddr $(PM_ADDR) \
+	-pmsize $(PM_SIZE) \
+	-pmlayout $(PM_LAYOUT) \
+	-crash $(CRASH) \
+	-opfile $(OP_PATH) \
+	-oracle $(OUTPUT_PATH) \
+	-o $(REPLAY_OUT_PATH)-p \
+	-w $(REPLAY_PARALLEL_PATH) \
+	-useTPL 0 \
+	-server $(SERVER_NAME)
+
+$(NAME).pmtrace: $(NAME).trace
+	@ $(OPT) -load $(GIRI_LIB_DIR)/libdgutility.so \
+		-load $(GIRI_LIB_DIR)/libgiri.so \
+		-load $(GIRI_LIB_DIR)/libwitcher.so \
+		-mergereturn -lsnum \
+		-dwitcherpmtrace \
+		-trace-file=$(NAME).trace \
+		-trace-store-file=$(NAME).trace.storevalue \
+		-pm-addr=$(PM_ADDR) \
+		-pm-size=$(PM_SIZE) \
+		-ext-tracing-func-file=$(EXT_TRACING_FUNC_FILE) \
+		-pmtrace-file=$(NAME).pmtrace \
+		-remove-lsnum \
+		-stats $(DEBUGFLAGS) $(ALL_BC) -o /dev/null
+
+$(NAME).ppdg: $(NAME).trace.split
+	@ $(PPDG_PARALLEL_EXE_PATH) \
+		-opt $(OPT) \
+		-trace $(NAME).trace.split \
+		-giri $(GIRI_LIB_DIR) \
+		-prefix $(NAME) \
+		-pmaddr $(PM_ADDR) \
+		-pmsize $(PM_SIZE) \
+		-bc $(ALL_BC) \
+		-o $(NAME).ppdg.split \
+		-useTPL 0
+
+# Get BB list for each trace
+$(NAME).trace.split.bb: $(NAME).trace.split
+	mkdir $(NAME).trace.split.bb
+	$(GIRI_BIN_DIR)/tracesplitbb \
+	$(NAME).trace.split \
+	$(NAME).trace.split.bb
+
+# Execute the executable to collect the trace
+$(NAME).trace.split: $(NAME).trace
+	mkdir $(NAME).trace.split
+	$(GIRI_BIN_DIR)/tracesplit \
+	$(NAME).trace \
+	$(EXT_TRACING_FUNC_FILE) \
+	$(NAME).trace.split
+
+# Execute the executable to collect the trace
+$(NAME).trace:
+	- WITCHER_PMDK_TRACING=1 PMEM_IS_PMEM_FORCE=0 ./$(TRACE_EXE) $(INPUT)
+
+.PHONY: ptrace rebuild clean
+
+# Use prtrace to print the trace
+# $<: The name of the first prerequisite
+prtrace: $(NAME).trace
+	$(GIRI_BIN_DIR)/prtrace \
+	$(NAME).trace \
+	$(NAME).trace.storevalue
+
+# Use prtrace to print the PM trace
+# `cat maps | grep $(PM_FILE_PATH) | cut -c1-12` \
+# `cat maps | grep $(PM_FILE_PATH) | cut -c14-25` \
+
+#$(NAME).pmtrace: $(NAME).trace
+#	$(GIRI_BIN_DIR)/pmtrace \
+#	$(NAME).trace \
+#	$(NAME).trace.storevalue \
+#	$(PM_ADDR) \
+#	$(PM_SIZE) \
+#	$(EXT_TRACING_FUNC_FILE) \
+#	> $(NAME).pmtrace
+
+.PHONY: run
+
+check :
+	./$(CHECK_EXE) $(PM_FILE_PATH) $(PM_LAYOUT)
+
+# Run the pure executable
+run :
+	- ./$(EXE) $(INPUT)
+
+# Coverage Report
+cov-report: cov-data
+	- $(LLVMCOV) report ./$(COV_EXE) -instr-profile=cov-data
+
+cov-show: cov-data
+	- $(LLVMCOV) show ./$(COV_EXE) -instr-profile=cov-data
+
+cov-data : cov-raw
+	- $(LLVMPROFDATA) merge -sparse cov-raw -o cov-data
+
+cov-raw:
+	- LLVM_PROFILE_FILE="cov-raw" ./$(COV_EXE) $(INPUT)
+
+# Rebuild
+rebuild: clean all
+
+# Clean
+clean:
+	@ rm -rf *.trace* *.pmtrace *.storevalue *.pdg *.ppdg* *.csv cov-* tc\
+			$(PM_FILE_PATH) $(MEM_LAYOUT_PATH) $(OUTPUT_PATH) $(REPLAY_OUT_PATH)* \
+			$(PMDK_OP_TRACE) $(PMDK_VAL_TRACE)

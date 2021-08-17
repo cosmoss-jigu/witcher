@@ -1,0 +1,65 @@
+diff --git a/nvml/src/examples/libpmemobj/map/data_store.c b/nvml/src/examples/libpmemobj/map/data_store.c
+index 075bd88..50929cd 100755
+--- a/nvml/src/examples/libpmemobj/map/data_store.c
++++ b/nvml/src/examples/libpmemobj/map/data_store.c
+@@ -208,14 +208,14 @@ int main(int argc, const char *argv[]) {
+ 			/* new_store_item is transactional! */
+ 			metadataPtr = metadataVectorPtr[i];
+ 			PMTest_START;
+-			if (strcmp("hashmap_atomic", type))
+-				PMTest_CHECKER_START;
++			// if (strcmp("hashmap_atomic", type))
++			// 	PMTest_CHECKER_START;
+ 			TX_BEGIN(pop) {
+ 			map_insert(mapc, D_RW(root)->map, rand(),
+ 					new_store_item().oid);
+ 			} TX_END
+-			if (strcmp("hashmap_atomic", type))
+-				PMTest_CHECKER_END;
++			// if (strcmp("hashmap_atomic", type))
++			// 	PMTest_CHECKER_END;
+ 			PMTest_END;
+ 			C_execVeri(p, metadataPtr);
+ 		}
+@@ -251,13 +251,13 @@ int main(int argc, const char *argv[]) {
+ 	for (int i = 0; i < nkeys; ++i) {
+ 		metadataPtr = metadataVectorPtr[i];
+ 		PMTest_START;
+-		if (strcmp("hashmap_atomic", type))
+-			PMTest_CHECKER_START;
++		// if (strcmp("hashmap_atomic", type))
++		// 	PMTest_CHECKER_START;
+ 
+ 		PMEMoid item = map_remove(mapc, D_RW(root)->map, keys[i]);
+ 	
+-		if (strcmp("hashmap_atomic", type))
+-			PMTest_CHECKER_END;
++		// if (strcmp("hashmap_atomic", type))
++		// 	PMTest_CHECKER_END;
+ 		PMTest_END;
+ 		C_execVeri(p, metadataPtr);
+ 
+diff --git a/nvml/src/examples/libpmemobj/tree_map/ctree_map.c b/nvml/src/examples/libpmemobj/tree_map/ctree_map.c
+index 17aebf5..cbb4ead 100755
+--- a/nvml/src/examples/libpmemobj/tree_map/ctree_map.c
++++ b/nvml/src/examples/libpmemobj/tree_map/ctree_map.c
+@@ -216,6 +216,7 @@ ctree_map_insert(PMEMobjpool *pop, TOID(struct ctree_map) map,
+ 	}
+ 
+ 	struct tree_map_entry e = {key, value};
++	PMTest_CHECKER_START;
+ 	TX_BEGIN(pop) {
+ 		if (p->key == 0 || p->key == key) {
+ 			pmemobj_tx_add_range_direct(p, sizeof(*p));
+@@ -224,9 +225,11 @@ ctree_map_insert(PMEMobjpool *pop, TOID(struct ctree_map) map,
+ 			ctree_map_insert_leaf(&D_RW(map)->root, e,
+ 					find_crit_bit(p->key, key));
+ 		}
++		return ret;
+ 	} TX_ONABORT {
+ 		ret = 1;
+ 	} TX_END
++	PMTest_CHECKER_END;
+ 
+ 	// not needed for now
+ 	// printf("ret = %d\n", ret);

@@ -1,0 +1,7 @@
+*.c
+*.h
+.make-prerequisites
+.make-settings
+redis.conf
+valgrind.sup
+redis-server
