@@ -2,7 +2,8 @@ CXX=g++
 CXXINC= -I../include -I$(LLVM9_HOME)/include -I$(LLVM9_HOME)/build/include
 #CXXFLAGS= -g -c -fPIC -std=c++17 $(CXXINC) -DDEBUG_GIRI_RUNTIME
 CXXFLAGS= -g -c -fPIC -std=c++17 $(CXXINC)
-CXXLD= -L$(LLVM9_HOME)/build/lib -lLLVMSupport -ltinfo -lpthread -lstdc++fs
+#CXXLD= -L$(LLVM9_HOME)/build/lib -lLLVMSupport -ltinfo -lpthread -lstdc++fs
+CXXLD= -L$(LLVM9_HOME)/build/lib -lLLVMSupport -lpthread -lstdc++fs
 
 GIRI=../lib/Giri
 UTILITY=../lib/Utility

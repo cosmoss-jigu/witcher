@@ -17,12 +17,26 @@ The artifact was tested in a machine with following specifications:
 
 Download the VM image from the [link](TODO)
 ```bash
-# wget command
+# command to download the VM
 TODO
-# ssh
-TODO
-# username and password
-TODO
+
+# start the VM in background
+qemu-system-x86_64 \
+    -hda witcher-sosp21-ae.img \
+    -m 64G \
+    -smp 32 \
+    -machine pc,accel=kvm \
+    -enable-kvm \
+    -vnc :5 \
+    -net nic \
+    -net user,hostfwd=tcp::2222-:22 \
+    -daemonize
+
+# ssh to the VM
+ssh review@localhost -p 2222
+
+# username: review
+# password: sosp21
 ```
 
 You can get bugs reported by the paper without running the below commands:
@@ -61,12 +75,9 @@ vim tasks.py
   ```bash
   # vim ~/.bashrc and add following:
 
-  export CC=gcc
-  export CXX=g++
-
   export LLVM9_HOME=/home/review/llvm/llvm-9.0.1.src
   export LLVM9_BIN=$LLVM9_HOME/build/bin
-  export WITCHER_HOME=/home/review/fortjoy/witcher
+  export WITCHER_HOME=/home/review/witcher
 
   export PMEM_MMAP_HINT=600000000000
   export PMEM_IS_PMEM_FORCE=1
@@ -91,6 +102,7 @@ vim tasks.py
 - install llvm and clang 9.0.1
   - get source
     ```bash
+    mkdir $LLVM9_HOME
     wget https://github.com/llvm/llvm-project/releases/download/llvmorg-9.0.1/llvm-9.0.1.src.tar.xz
     wget https://github.com/llvm/llvm-project/releases/download/llvmorg-9.0.1/clang-9.0.1.src.tar.xz
     wget https://github.com/llvm/llvm-project/releases/download/llvmorg-9.0.1/compiler-rt-9.0.1.src.tar.xz
@@ -120,15 +132,16 @@ vim tasks.py
 
 ### Dependencies
 ```bash
-# boost
-TODO
+# boost and ...
+sudo yum install gcc gcc-c++ vim make cmake tmux git boost-devel python3-pip \
+                 tbb-devel libatomic autoconf libevent-devel automake
 # redis memcached pyplt
-pip3 install pymemcache redis matplotlib
+sudo pip3 install pymemcache redis matplotlib
 ```
 
 ### Play
 ```bash
-git clone TODO
+git clone git@github.com:cosmoss-vt/witcher.git
 cd $WITCHER_HOME/script
 
 # build witcher
