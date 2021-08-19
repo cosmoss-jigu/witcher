@@ -13,13 +13,41 @@ The artifact was tested in a machine with following specifications:
 - 192 GB DRAM
 - 512 GB NVM
 
+We provided two solutions for running the artifacts:
+- Use virtual machine (**recommended**)
+- Setup from scratch
+
 ## Use virtual machine
 
-Download the VM image from the [link](TODO)
+The VM uses 32 cores and 64GB memory. The size of the image is over 70GB, and
+the VM may use around 100GB disk after running artifacts. So make sure you are
+using a machine with sufficient cores, memory and disk. SSD in host machine is
+preferred.
+
+### Download the VM image in Google Drive
+[Google drive link](https://drive.google.com/drive/folders/1bxr4lKCqlJVEx6S57-hNylLzNHkCm03x).
+Since the VM image contains llvm-9 built inside, its size is over 70GB.
+If we want to download it by using command line, we need to use OAuth token.
+([ref link](https://webapps.stackexchange.com/questions/126394/cant-download-large-file-from-google-drive-as-one-single-folder-always-splits))
+- go to [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
+- under **Step 1** box, scroll down to **Drive API v3**
+- expand it and select **https://www.googleapis.com/auth/drive.readonly**
+- click on the blue **Authorize APIs button**
+- login if you are prompted
+- and then click on **Exchange authorization code for tokens** to get a token in
+  **Step 2**
+- copy the **Access token** for further use
 ```bash
 # command to download the VM
-TODO
+# replace ttt wiht your Access token
+curl -H "Authorization: Bearer ttt" https://www.googleapis.com/drive/v3/files/1Z-PEObKkaL6SIbE83B_OxjKRnU9mHkGl?alt=media -o witcher-sosp21-ae.img
+```
 
+### Start the VM and connect to it
+Running the artifacts may cost over 10 hours, so make sure your ssh connection
+will not lose and the host machine will not sleep or turn off.
+Consider run **tmux** first before your connection.
+```bash
 # start the VM in background
 qemu-system-x86_64 \
     -hda witcher-sosp21-ae.img \
@@ -38,13 +66,14 @@ ssh review@localhost -p 2222
 # username: review
 # password: sosp21
 ```
-
-You can get bugs reported by the paper without running the below commands:
+### Play
+After you log into the VM, you can get bugs reported by the paper without
+running the artifacts:
 - $WITCHER_HOME/bugs/sosp21-correctness-bugs.md
 - $WITCHER_HOME/bugs/sosp21-performance-bugs.md
 
-All dependencies have been set up and the tool have been built, you only need to
-run the following command:
+In the VM, all dependencies have been set up and the tool have been built, you
+only need to run the following command:
 ```bash
 cd $WITCHER_HOME/script
 ./run_and_get_res_fig.sh
@@ -69,8 +98,10 @@ vim tasks.py
 
 ## Setup from scratch
 
-### Environment
+Here we assume we are using Fedora 29, so we use **yum** for package management.
 
+### Environment
+Here we assume we are using bash.
 - setup .bashrc
   ```bash
   # vim ~/.bashrc and add following:
@@ -119,7 +150,7 @@ vim tasks.py
     cd $LLVM9_HOME/build
     cmake -DLLVM_ENABLE_RTTI=true ..
     make -j16
-
+    ```
   - update .bashrc
     ```bash
     # vim ~/.bashrc and add following:
