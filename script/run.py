@@ -33,6 +33,8 @@ def run(app_name, path):
     os.system('make res_analysis >/dev/null')
     os.system('make tc >/dev/null')
 
+    os.system('rm -f /tmp/main.exe* /tmp/opt-*')
+
     f.write('\n')
     f.flush()
 

@@ -145,13 +145,13 @@ class WitcherTCEngine(ReplayEngineBase):
             for op in ops[witcher_tx_range[0]:witcher_tx_range[1]]:
                 if isinstance(op, TXStart):
                     in_Witcher_TX = True
-                    #for store in self.cache.get_all_stores():
-                    #    self.res.unflushed_stores.add(store)
+                    for store in self.cache.get_all_stores():
+                        self.res.unflushed_stores.add(store)
 
                 elif isinstance(op, TXEnd):
                     in_Witcher_TX = False
-                    #for store in self.cache.get_all_stores():
-                    #    self.res.unflushed_stores.add(store)
+                    for store in self.cache.get_all_stores():
+                        self.res.unflushed_stores.add(store)
 
                 elif isinstance(op, PMDKCall):
                     func_name = op.func_name

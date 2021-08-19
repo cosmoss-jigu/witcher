@@ -134,9 +134,9 @@ vim tasks.py
 ```bash
 # boost and ...
 sudo yum install gcc gcc-c++ vim make cmake tmux git boost-devel python3-pip \
-                 tbb-devel libatomic autoconf libevent-devel automake
-# redis memcached pyplt
-sudo pip3 install pymemcache redis matplotlib
+                 tbb-devel libatomic autoconf libevent-devel automake psmisc
+# redis memcached pyplt networkx
+sudo pip3 install pymemcache redis matplotlib networkx
 ```
 
 ### Play
@@ -169,9 +169,22 @@ the paper, this artifact by default only selects a portion of the application.
 If you are interested in running other applications, please do as following:
 ```bash
 cd $WITCHER_HOME/script
+
 # edit the tasks.py file to select the the application you are interested in
 vim tasks.py
-./run_and_get_res_fig.sh
+
+# build witcher
+./build.sh
+
+# instrument apps
+python3 instrument.py
+
+# run witcher
+python3 run.py
+
+# get result
+python3 get_result.py
+python3 get_figure.py
 ```
 
 You can get bugs reported by the paper without running the above commands:

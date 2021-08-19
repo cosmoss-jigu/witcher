@@ -220,4 +220,4 @@ class WitcherParallelResAnalyzer:
                 bb_key_index += 1
             f.write('\n')
 
-        os.system("rm -rf " + self.input_path+"/tx-*" + " " + self.input_path+"/*.pickle")
+        #os.system("rm -rf " + self.input_path+"/tx-*" + " " + self.input_path+"/*.pickle")
